@@ -1,0 +1,18 @@
+# Generic (pre-PDK) synthesis for rtfce_top (optimized RTFCE)
+# Mirrors synth_generic.ys exactly for direct comparison with baseline.
+
+read_verilog ../src/shared_classifier.v
+read_verilog ../src/classify_arbiter.v
+read_verilog ../src/monitor_ctx_rtfce.v
+read_verilog ../src/result_arbiter.v
+read_verilog ../src/rtfce_top.v
+
+hierarchy -top rtfce_top
+proc
+opt
+synth -top rtfce_top
+
+stat
+
+select rtfce_top
+show -format svg -prefix rtfce_opt_schematic
