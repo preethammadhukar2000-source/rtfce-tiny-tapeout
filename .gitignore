@@ -11,3 +11,10 @@ test/sim_build
 test/__pycache__/
 test/results.xml
 test/gate_level_netlist.v
+
+# cocotb / simulation build artifacts
+__pycache__/
+*.pyc
+results.xml
+sim_build/
+*.fst
