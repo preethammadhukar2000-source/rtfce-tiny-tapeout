@@ -1,0 +1,11 @@
+read_verilog ../src/monitor_ctx.v
+read_verilog ../src/result_arbiter.v
+read_verilog ../src/project.v
+
+hierarchy -top tt_um_rtfce
+proc
+opt
+synth -top tt_um_rtfce
+
+select tt_um_rtfce
+show -format svg -prefix rtfce_top_schematic

@@ -1,0 +1,16 @@
+# Generic (pre-PDK) synthesis for tt_um_rtfce baseline
+# Produces structural sanity check + schematic image only.
+# Real PDK-mapped numbers come from LibreLane, not this script.
+
+read_verilog ../src/monitor_ctx.v
+read_verilog ../src/result_arbiter.v
+read_verilog ../src/project.v
+
+hierarchy -top tt_um_rtfce
+proc
+opt
+synth -top tt_um_rtfce
+
+stat
+
+show -format svg -prefix rtfce_generic_schematic
