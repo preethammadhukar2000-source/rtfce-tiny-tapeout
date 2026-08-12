@@ -3,7 +3,7 @@
 
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import RisingEdge, ClockCycles, ReadOnly, NextTimeStep
+from cocotb.triggers import RisingEdge, ClockCycles, ReadOnly, NextTimeStep, Timer
 
 REQ, ACK, DATA, DONE = 0, 1, 2, 3
 PASS, EARLY, TIMEOUT = 0, 1, 2
@@ -47,7 +47,12 @@ async def configure_ctx(dut, ctx, start_ev, end_ev, min_lat, max_lat, enable=1):
 async def cfg_read(dut, ctx, byte_sel):
     dut.ui_in.value = build_ui_in(strobe=1, cfg_mode=1, cfg_rw=1, cfg_byte_sel=byte_sel, addr_sel=ctx)
     await RisingEdge(dut.clk)
-    await ReadOnly()
+    # Extra timing margin for gate-level simulation: real gates have
+    # propagation delay (e.g. unit-delay #1 in GL_TEST), so the
+    # registered value may not have settled exactly at the clock edge
+    # the way it does in zero-delay RTL simulation. ReadOnly() alone
+    # is not sufficient here -- wait past the gate delay explicitly.
+    await Timer(2, unit="ns")
     val = int(dut.uio_out.value)
     await NextTimeStep()
     dut.ui_in.value = build_ui_in(strobe=0, cfg_mode=1, cfg_rw=1, cfg_byte_sel=byte_sel, addr_sel=ctx)
