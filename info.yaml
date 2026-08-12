@@ -3,15 +3,17 @@ project:
   title:        "RTFCE - Reconfigurable Temporal Fault/Constraint Engine"
   author:       "Preetham Madhukar, Madhu M"
   discord:      ""
-  description:  "Multi-context temporal latency monitor (PASS/EARLY/TIMEOUT) with shared classification datapath via arbitration"
+  description:  "Multi-context temporal latency monitor (PASS/EARLY/TIMEOUT + near-miss diagnostic) with shared classification datapath via selectable fixed-priority/round-robin arbitration"
   language:     "Verilog"
   clock_hz:     50000000
   tiles: "1x1"
   top_module:  "tt_um_rtfce"
   source_files:
     - "project.v"
-    - "monitor_ctx.v"
-    - "result_arbiter.v"
+    - "monitor_ctx_rtfce.v"
+    - "classify_arbiter_heavy.v"
+    - "shared_classifier_heavy.v"
+    - "result_arbiter_heavy.v"
 pinout:
   # Inputs
   ui[0]: "strobe (event strobe / cfg strobe)"
