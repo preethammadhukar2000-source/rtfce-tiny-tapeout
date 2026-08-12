@@ -152,3 +152,51 @@ async def test_timeout_via_pins(dut):
     context_id = (val >> 2) & 0x3
     assert result == TIMEOUT, f"expected TIMEOUT, got {result}"
     assert context_id == 2
+
+
+async def set_rr_enable(dut, enable):
+    """D12: write to addr_sel=3, byte_sel=0 sets global rr_enable (bit 0)."""
+    dut.uio_in.value = 1 if enable else 0
+    dut.ui_in.value = build_ui_in(strobe=1, cfg_mode=1, cfg_rw=0, cfg_byte_sel=0, addr_sel=3)
+    await RisingEdge(dut.clk)
+    dut.ui_in.value = build_ui_in(strobe=0, cfg_mode=1, cfg_rw=0, cfg_byte_sel=0, addr_sel=3)
+    await RisingEdge(dut.clk)
+
+
+@cocotb.test()
+async def test_round_robin_via_pins(dut):
+    """D12: enable round-robin via the real pin interface, verify all
+    3 contexts get served fairly under persistent contention, through
+    the actual TT pins -- not just the internal module interface."""
+    await start_clock(dut)
+    await reset_dut(dut)
+
+    await configure_ctx(dut, ctx=0, start_ev=REQ, end_ev=DONE, min_lat=0, max_lat=15, enable=1)
+    await configure_ctx(dut, ctx=1, start_ev=ACK, end_ev=DATA, min_lat=0, max_lat=15, enable=1)
+    await configure_ctx(dut, ctx=2, start_ev=DATA, end_ev=ACK, min_lat=0, max_lat=15, enable=1)
+
+    await set_rr_enable(dut, True)
+
+    # Arm all 3 contexts with distinct event codes so they can be
+    # independently started/ended without interfering with each other
+    await pulse_event(dut, REQ)   # starts ctx0
+    await pulse_event(dut, ACK)   # starts ctx1 (also matches ctx2's end -- but ctx2 not armed yet, harmless)
+    await pulse_event(dut, DATA)  # starts ctx2, also ends ctx1
+
+    # At this point ctx1 should already be DONE_PENDING (ended by the DATA pulse above).
+    # End ctx0 and ctx2 now so all 3 are pending simultaneously.
+    await pulse_event(dut, DONE)  # ends ctx0
+    await pulse_event(dut, ACK)   # ends ctx2
+
+    served_order = []
+    for _ in range(6):
+        await RisingEdge(dut.clk)
+        await ReadOnly()
+        val = int(dut.uo_out.value)
+        if (val >> 4) & 1:
+            served_order.append((val >> 2) & 0x3)
+        await NextTimeStep()
+
+    assert len(served_order) >= 3, f"expected at least 3 results, got {served_order}"
+    assert set(served_order[:3]) == {0, 1, 2}, \
+        f"round-robin must serve all 3 contexts, got {served_order}"

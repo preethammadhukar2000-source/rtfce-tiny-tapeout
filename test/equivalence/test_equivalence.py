@@ -206,3 +206,47 @@ async def test_equiv_two_way_priority(dut):
         f"second result mismatch: baseline={baseline_second} rtfce={rtfce_second}"
     assert baseline_first[1] == 0, "both designs must serve ctx0 first"
     assert baseline_second[1] == 1, "both designs must serve ctx1 second"
+
+
+async def set_rr_enable(dut, enable):
+    """D12: write to addr_sel=3, byte_sel=0 sets global rr_enable on
+    RTFCE (bit 0). Baseline (tt_um_rtfce) receives the same write on
+    its shared pins but ignores it -- addr_sel=3 writes are a no-op
+    there per D4, unchanged. Harmless to send to both."""
+    dut.uio_in.value = 1 if enable else 0
+    dut.ui_in.value = build_ui_in(strobe=1, cfg_mode=1, cfg_rw=0, cfg_byte_sel=0, addr_sel=3)
+    await RisingEdge(dut.clk)
+    dut.ui_in.value = build_ui_in(strobe=0, cfg_mode=1, cfg_rw=0, cfg_byte_sel=0, addr_sel=3)
+    await RisingEdge(dut.clk)
+
+
+@cocotb.test()
+async def test_equiv_round_robin_single_context_pass(dut):
+    """RR mode changes SERVING ORDER under contention, not CLASSIFICATION
+    correctness. With only one context active, RR vs fixed-priority is
+    indistinguishable, so results must still match baseline exactly."""
+    await start_clock(dut)
+    await reset_dut(dut)
+    await set_rr_enable(dut, True)   # enable RR on RTFCE (no-op on baseline)
+    await configure_ctx(dut, ctx=0, start_ev=REQ, end_ev=DONE, min_lat=3, max_lat=10, enable=1)
+
+    await pulse_event(dut, REQ)
+    await ClockCycles(dut.clk, 5)
+    await pulse_event(dut, DONE)
+
+    result, ctx = await wait_for_both_and_compare(dut, label="rr_single_pass")
+    assert result == PASS
+    assert ctx == 0
+
+
+@cocotb.test()
+async def test_equiv_round_robin_single_context_timeout(dut):
+    await start_clock(dut)
+    await reset_dut(dut)
+    await set_rr_enable(dut, True)
+    await configure_ctx(dut, ctx=1, start_ev=REQ, end_ev=DONE, min_lat=0, max_lat=15, enable=1)
+
+    await pulse_event(dut, REQ)
+    result, ctx = await wait_for_both_and_compare(dut, max_cycles=40, label="rr_single_timeout")
+    assert result == TIMEOUT
+    assert ctx == 1

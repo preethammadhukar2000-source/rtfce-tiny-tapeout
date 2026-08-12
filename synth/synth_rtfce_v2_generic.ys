@@ -1,0 +1,12 @@
+read_verilog ../src/shared_classifier.v
+read_verilog ../src/classify_arbiter.v
+read_verilog ../src/monitor_ctx_rtfce.v
+read_verilog ../src/result_arbiter.v
+read_verilog ../src/rtfce_top.v
+
+hierarchy -top rtfce_top
+proc
+opt
+synth -top rtfce_top
+
+stat
