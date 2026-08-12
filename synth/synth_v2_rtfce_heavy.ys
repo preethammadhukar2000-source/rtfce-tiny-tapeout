@@ -1,0 +1,8 @@
+read_verilog ../src/monitor_ctx_rtfce.v
+read_verilog ../src/classify_arbiter_heavy.v
+read_verilog ../src/shared_classifier_heavy.v
+read_verilog ../src/result_arbiter_heavy.v
+read_verilog ../src/rtfce_top_v2_heavy.v
+hierarchy -top rtfce_top_v2_heavy
+proc; opt; synth -top rtfce_top_v2_heavy
+stat

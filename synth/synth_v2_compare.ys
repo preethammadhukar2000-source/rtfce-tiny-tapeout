@@ -1,0 +1,7 @@
+read_verilog ../src/monitor_ctx_heavy.v
+read_verilog ../src/shared_classifier_heavy.v
+read_verilog ../src/result_arbiter_heavy.v
+read_verilog ../src/project_v2.v
+hierarchy -top project_v2
+proc; opt; synth -top project_v2
+stat
