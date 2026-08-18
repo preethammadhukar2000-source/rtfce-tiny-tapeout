@@ -1,7 +1,7 @@
 # Tiny Tapeout project information
 project:
   title:        "RTFCE - Reconfigurable Temporal Fault/Constraint Engine"
-  author:       "Preetham Madhukar, Madhu M"
+  author:       "Preetham Madhukar, Tejasvi Mallaiah"
   discord:      ""
   description:  "Multi-context temporal latency monitor (PASS/EARLY/TIMEOUT + near-miss diagnostic) with shared classification datapath via selectable fixed-priority/round-robin arbitration"
   language:     "Verilog"
